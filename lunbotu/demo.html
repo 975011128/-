@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            list-style: none;
+        }
+        .wrapper {
+            position: relative;
+            width: 500px;
+            height: 300px;
+            border: 1px solid #000;
+            margin: 100px auto;
+            overflow: hidden;
+        }
+        .content {
+            position: absolute;
+            width: 2000px;
+            height: 300px;
+            left: 0px;
+        }
+        .content li {
+            float: left;
+        }
+        .content li img {
+            width: 500px;
+            height: 300px;
+        }
+        .wrapper:hover .btn {
+            display: block;
+        }
+        .btn {
+            position: absolute;
+            width: 20px;
+            height: 30px;
+            background: #000;
+            color: #fff;
+            opacity: 0.5;
+            text-align: center;
+            line-height: 30px;
+            top: 50%;
+            margin-top: -15px;
+            display: none;
+            cursor: pointer;
+        }
+        .leftBtn {
+            left: 0;
+            border-radius: 0 15px 15px 0;
+        }
+        .rightBtn {
+            right: 0;
+            border-radius: 15px 0  0 15px;
+        }
+        .spot {
+            position: absolute;
+            bottom: 10px;
+            width: 60px;
+            left: 50%;
+            margin-left: -30px;
+        }
+        .spot li {
+            width: 10px;
+            height: 10px;
+            border: 1px solid #eee;
+            border-radius: 50%;
+            float: left;
+            margin-right: 5px;
+            cursor: pointer;
+        }
+        .active {
+            background: orange;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <ul class="content">
+            <li><img src="./image/dog1.jpg" alt=""></li>
+            <li><img src="./image/dog2.jpg" alt=""></li>
+            <li><img src="./image/dog3.jpg" alt=""></li>
+            <li><img src="./image/dog1.jpg" alt=""></li>
+        </ul>
+        <div class="btn leftBtn">&lt;</div>
+        <div class="btn rightBtn">&gt;</div>
+        <ul class="spot">
+            <li class="active"></li>
+            <li></li>
+            <li></li>
+        </ul>
+    </div>
+    
+    <script>
+        var oUl = document.getElementsByClassName('content')[0];
+        var timer = null;
+        var imgWidth = document.getElementsByTagName('img')[0].width;
+        var imgNum = document.getElementsByTagName('img').length - 1;
+        var leftBtn = document.getElementsByClassName('leftBtn')[0];
+        var rightBtn = document.getElementsByClassName('rightBtn')[0];
+        var lock = true;
+        var oSpot = document.getElementsByClassName('spot')[0].children;
+        var index = 0;
+
+        
+        leftBtn.onclick = function () {
+            autoMove(-1);
+        }
+        rightBtn.onclick = function () {
+            autoMove(1);
+        }
+
+        for (var i = 0; i < oSpot.length; i++) {
+            (function (myIndex) {
+                oSpot[myIndex].onclick = function () {
+                    index = myIndex;
+                    clearTimeout(timer);
+                    startMove(oUl, {left: -myIndex * imgWidth}, function () {
+                        timer = setTimeout(autoMove, 1500);
+                        changeIndex(index);
+                    })
+                }
+            } (i))           
+        }
+
+        // direction >= 0 正向  < 0 逆向
+        function autoMove (direction) {
+            clearTimeout(timer);
+            if (lock) {
+                lock = false;
+                if(!direction || direction >= 0) {
+                    index++;
+                    startMove(oUl, {left: oUl.offsetLeft - imgWidth}, function () {
+                        if (oUl.offsetLeft == - imgNum * imgWidth) {
+                            oUl.style.left = '0px';
+                            index = 0;
+                        }
+                        timer = setTimeout(autoMove, 1500);
+                        lock = true;
+                        changeIndex(index);
+                    })
+                } else {
+                    index--;
+                    if(oUl.offsetLeft == 0) {
+                        oUl.style.left = -imgNum * imgWidth + 'px';
+                        index = imgNum - 1;
+                    }
+                    startMove(oUl, {left: oUl.offsetLeft + imgWidth}, function () {
+                        timer = setTimeout(autoMove, 1500);
+                        lock = true;
+                        changeIndex(index);
+                    })
+                }   
+            }
+        }
+
+        timer = setTimeout(autoMove, 1500)
+
+
+        function getStyle (dom, attr) {
+            if(window.getComputedStyle) {
+                return window.getComputedStyle(dom, null)[attr];
+            } else {
+                return dom.currentStyle[attr];
+            }
+        }
+
+        function startMove (dom, targetObjet, cb) {
+            clearInterval(dom.timer);
+            var iSpeed = 0;
+            var iCurValue = 0;
+            dom.timer = setInterval(function () {
+                var bStop = true;
+                for (var attr in targetObjet) {
+                    if (attr === 'opacity') {
+                        iCurValue = parseFloat( getStyle (dom, attr)) * 100;
+                    }else {
+                        iCurValue = parseInt(getStyle(dom, attr));
+                    }
+                    iSpeed = (targetObjet[attr] - iCurValue) / 7;
+                    iSpeed = iSpeed > 0 ? Math.ceil(iSpeed) : Math.floor(iSpeed);
+                    if (attr === 'opacity') {
+                        dom.style.opacity = (iCurValue + iSpeed) / 100;
+                    }else {
+                        dom.style[attr] = iCurValue + iSpeed + 'px';
+                    }
+                    if (iCurValue !== targetObjet[attr]) {
+                        bStop = false;
+                    }
+                    if (bStop) {
+                        clearInterval(dom.timer);
+                        cb && cb.apply(dom, arguments);
+                    }
+                }
+            }, 30)
+        }
+
+        function changeIndex(index) {
+            for (var i = 0; i < oSpot.length; i++) {
+                oSpot[i].className = '';
+            }
+            oSpot[index].className = 'active';
+        }
+    </script>
+</body>
+</html>
